@@ -5,7 +5,6 @@ from datetime import datetime
 
 app = FastAPI(title="PyClima API")
 
-
 # ========================================
 # BANCO DE DADOS
 # ========================================
