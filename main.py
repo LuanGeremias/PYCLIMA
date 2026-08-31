@@ -11,10 +11,10 @@ import urequests
 DHT_PIN = 26
 CHUVA_PIN = 25
 
-WIFI_SSID = "LUCAS"
-WIFI_SENHA = "senh@999"
+WIFI_SSID = "infor01"
+WIFI_SENHA = "infor101"
 
-API_URL = "http://192.168.3.103:8000/sensores"
+API_URL = "http://192.168.137.168:8000/sensores"
 
 # ========================================
 # SENSORES
