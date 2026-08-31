@@ -8,7 +8,7 @@ import urequests
 # CONFIGURAÇÃO
 # ========================================
 
-DHT_PIN = 27
+DHT_PIN = 26
 CHUVA_PIN = 25
 
 WIFI_SSID = "LUCAS"
@@ -50,7 +50,7 @@ if wifi.isconnected():
     print("Wi-Fi conectado!")
     print("IP do ESP32:", wifi.ifconfig()[0])
 else:
-    print("ERRO: não foi possível conectar ao Wi-Fi.")
+    print("ERRO: Wi-Fi não conectado.")
 
 # ========================================
 # LOOP
@@ -62,10 +62,18 @@ while True:
 
     try:
 
+        # ----------------------------------------
+        # LER DHT11
+        # ----------------------------------------
+
         sensor.measure()
 
         temperatura = sensor.temperature()
         umidade = sensor.humidity()
+
+        # ----------------------------------------
+        # LER CHUVA
+        # ----------------------------------------
 
         chuva = sensor_chuva.value()
 
@@ -82,9 +90,9 @@ while True:
         print("Umidade:", umidade, "%")
         print("Chuva:", status_chuva)
 
-        # ========================================
+        # ----------------------------------------
         # ENVIAR PARA API
-        # ========================================
+        # ----------------------------------------
 
         if wifi.isconnected():
 
@@ -93,6 +101,8 @@ while True:
                 "umidade": umidade,
                 "chuva": bool(chuva)
             }
+
+            print("Enviando para API...")
 
             resposta = urequests.post(
                 API_URL,
@@ -104,6 +114,7 @@ while True:
             resposta.close()
 
         else:
+
             print("Wi-Fi desconectado.")
 
         print("----------------------------------------")
@@ -112,8 +123,8 @@ while True:
     except Exception as erro:
 
         print("----------------------------------------")
-        print("ERRO")
-        print("Erro:", erro)
+        print("ERRO:", erro)
         print("----------------------------------------")
+        print()
 
     time.sleep(5)

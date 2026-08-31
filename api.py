@@ -2,15 +2,30 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 
 app = FastAPI(title="PyClima API")
+
+# ========================================
+# CAMINHO DO BANCO
+# ========================================
+
+PASTA_PROJETO = Path(__file__).resolve().parent
+BANCO = PASTA_PROJETO / "pyclima.db"
+
+print("========================================")
+print("       PYCLIMA - BANCO DE DADOS")
+print("========================================")
+print("Banco utilizado:")
+print(BANCO)
+print()
 
 # ========================================
 # BANCO DE DADOS
 # ========================================
 
 def conectar_banco():
-    return sqlite3.connect("pyclima.db")
+    return sqlite3.connect(str(BANCO))
 
 
 def criar_banco():
@@ -31,9 +46,7 @@ def criar_banco():
     conexao.close()
 
 
-# Criar banco/tabela ao iniciar a API
 criar_banco()
-
 
 # ========================================
 # MODELO DOS DADOS
@@ -87,6 +100,7 @@ def receber_dados(dados: DadosSensores):
 
     print("----------------------------------------")
     print("DADO SALVO NO BANCO")
+    print("Banco:", BANCO)
     print("ID:", id_registro)
     print("Temperatura:", dados.temperatura)
     print("Umidade:", dados.umidade)
@@ -125,6 +139,7 @@ def consultar_dados():
     dados = []
 
     for registro in registros:
+
         dados.append({
             "id": registro[0],
             "temperatura": registro[1],
