@@ -3,6 +3,8 @@ import dht
 import time
 import network
 import urequests
+import ujson
+
 
 # ========================================
 # CONFIGURAÇÃO
@@ -11,10 +13,11 @@ import urequests
 DHT_PIN = 26
 CHUVA_PIN = 25
 
-WIFI_SSID = "infor01"
-WIFI_SENHA = "infor101"
+WIFI_SSID = "LUCAS"
+WIFI_SENHA = "senh@999"
 
-API_URL = "http://192.168.137.168:8000/sensores"
+API_URL = "http://192.168.3.103:8000/sensores"
+
 
 # ========================================
 # SENSORES
@@ -23,37 +26,61 @@ API_URL = "http://192.168.137.168:8000/sensores"
 sensor = dht.DHT11(Pin(DHT_PIN))
 sensor_chuva = Pin(CHUVA_PIN, Pin.IN)
 
+
 # ========================================
 # WIFI
 # ========================================
 
 wifi = network.WLAN(network.STA_IF)
+
 wifi.active(True)
 
 print()
 print("========================================")
 print("           PYCLIMA - ESP32")
 print("========================================")
-
 print("Conectando ao Wi-Fi...")
 
-wifi.connect(WIFI_SSID, WIFI_SENHA)
 
-tentativas = 0
+# Verifica se já está conectado
+if not wifi.isconnected():
 
-while not wifi.isconnected() and tentativas < 20:
-    time.sleep(1)
-    tentativas += 1
-    print("Tentativa:", tentativas)
+    try:
+        wifi.connect(WIFI_SSID, WIFI_SENHA)
+    except Exception as erro:
+        print("Erro ao iniciar conexão:", erro)
 
+
+    tentativas = 0
+
+    while not wifi.isconnected() and tentativas < 20:
+
+        time.sleep(1)
+
+        tentativas += 1
+
+        print("Tentativa:", tentativas)
+
+
+# Resultado da conexão
 if wifi.isconnected():
+
+    print()
     print("Wi-Fi conectado!")
     print("IP do ESP32:", wifi.ifconfig()[0])
+    print("Máscara:", wifi.ifconfig()[1])
+    print("Gateway:", wifi.ifconfig()[2])
+    print("DNS:", wifi.ifconfig()[3])
+
 else:
+
+    print()
     print("ERRO: Wi-Fi não conectado.")
+    print("Verifique o nome e a senha do Wi-Fi.")
+
 
 # ========================================
-# LOOP
+# LOOP PRINCIPAL
 # ========================================
 
 registro = 0
@@ -62,18 +89,19 @@ while True:
 
     try:
 
-        # ----------------------------------------
+        # ========================================
         # LER DHT11
-        # ----------------------------------------
+        # ========================================
 
         sensor.measure()
 
         temperatura = sensor.temperature()
         umidade = sensor.humidity()
 
-        # ----------------------------------------
-        # LER CHUVA
-        # ----------------------------------------
+
+        # ========================================
+        # LER SENSOR DE CHUVA
+        # ========================================
 
         chuva = sensor_chuva.value()
 
@@ -82,17 +110,24 @@ while True:
         else:
             status_chuva = "SEM CHUVA"
 
+
+        # ========================================
+        # REGISTRO
+        # ========================================
+
         registro += 1
 
+        print()
         print("----------------------------------------")
         print("Registro:", registro)
         print("Temperatura:", temperatura, "°C")
         print("Umidade:", umidade, "%")
         print("Chuva:", status_chuva)
 
-        # ----------------------------------------
+
+        # ========================================
         # ENVIAR PARA API
-        # ----------------------------------------
+        # ========================================
 
         if wifi.isconnected():
 
@@ -102,29 +137,45 @@ while True:
                 "chuva": bool(chuva)
             }
 
+            json_dados = ujson.dumps(dados)
+
             print("Enviando para API...")
 
-            resposta = urequests.post(
-                API_URL,
-                json=dados
-            )
+            try:
 
-            print("Resposta da API:", resposta.status_code)
+                resposta = urequests.post(
+                    API_URL,
+                    data=json_dados,
+                    headers={
+                        "Content-Type": "application/json"
+                    }
+                )
 
-            resposta.close()
+                print("Resposta da API:", resposta.status_code)
+
+                resposta.close()
+
+            except Exception as erro_api:
+
+                print("Erro ao enviar para API:", erro_api)
+
 
         else:
 
             print("Wi-Fi desconectado.")
+            print("Os dados não foram enviados.")
+
 
         print("----------------------------------------")
-        print()
+
 
     except Exception as erro:
 
+        print()
         print("----------------------------------------")
         print("ERRO:", erro)
         print("----------------------------------------")
-        print()
 
-    time.sleep(5)
+
+    # Aguarda 5 segundos
+    time.sleep(200)

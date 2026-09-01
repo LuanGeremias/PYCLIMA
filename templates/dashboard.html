@@ -1,166 +1,588 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 
-<head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head>
 
-<title>PyClima - Dashboard</title>
+    <meta charset="UTF-8">
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<style>
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
+    <title>PyClima - Dashboard</title>
 
-    body {
-        font-family: Arial, sans-serif;
-        background: #f2f5f7;
-        padding: 30px;
-    }
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    h1 {
-        text-align: center;
-        margin-bottom: 30px;
-    }
+    <style>
 
-    .graficos {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 25px;
-        max-width: 1200px;
-        margin: auto;
-    }
-
-    .card {
-        background: white;
-        padding: 25px;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-    }
-
-    .card h2 {
-        margin-bottom: 20px;
-    }
-
-    canvas {
-        width: 100% !important;
-        height: 350px !important;
-    }
-
-    @media (max-width: 800px) {
-        .graficos {
-            grid-template-columns: 1fr;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-    }
-</style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f5f7;
+            padding: 30px;
+        }
+
+        header {
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #666;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        .cards {
+            max-width: 1200px;
+            margin: 0 auto 25px auto;
+
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+
+            gap: 20px;
+        }
+
+        .card-info {
+            background: white;
+            padding: 25px;
+
+            border-radius: 15px;
+
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+
+            text-align: center;
+        }
+
+        .card-info h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .valor {
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        .graficos {
+
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 25px;
+
+            max-width: 1200px;
+
+            margin: auto;
+        }
+
+        .card {
+
+            background: white;
+
+            padding: 25px;
+
+            border-radius: 15px;
+
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .card h2 {
+
+            margin-bottom: 20px;
+
+            font-size: 20px;
+        }
+
+        .grafico-container {
+
+            position: relative;
+
+            height: 350px;
+        }
+
+        .chuva {
+
+            grid-column: 1 / -1;
+        }
+
+        canvas {
+
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        @media (max-width: 800px) {
+
+            body {
+                padding: 15px;
+            }
+
+            .cards {
+                grid-template-columns: 1fr;
+            }
+
+            .graficos {
+                grid-template-columns: 1fr;
+            }
+
+            .chuva {
+                grid-column: auto;
+            }
+
+        }
+
+    </style>
 
 </head>
 
+
 <body>
 
-<h1>🌦️ PyClima</h1>
 
-<div class="graficos">
+    <!-- ========================================
+         CABEÇALHO
+    ======================================== -->
 
-    <div class="card">
-        <h2>🌡️ Temperatura</h2>
-        <canvas id="graficoTemperatura"></canvas>
-    </div>
+    <header>
 
-    <div class="card">
-        <h2>💧 Umidade</h2>
-        <canvas id="graficoUmidade"></canvas>
-    </div>
+        <h1>🌦️ PyClima</h1>
 
-</div>
+        <p>Monitoramento climático em tempo real</p>
 
-<script>
+        <div class="status" id="status">
+            Carregando dados...
+        </div>
 
-    async function carregarDados() {
-
-        const resposta = await fetch("/sensores");
-
-        const dados = await resposta.json();
-
-        const datas = dados.map(item => item.data_hora);
-        const temperaturas = dados.map(item => item.temperatura);
-        const umidades = dados.map(item => item.umidade);
+    </header>
 
 
-        // GRÁFICO DE TEMPERATURA
+    <!-- ========================================
+         CARDS
+    ======================================== -->
 
-        new Chart(
-            document.getElementById("graficoTemperatura"),
-            {
-                type: "line",
+    <section class="cards">
 
-                data: {
-                    labels: datas,
+        <div class="card-info">
 
-                    datasets: [
-                        {
-                            label: "Temperatura (°C)",
-                            data: temperaturas,
-                            tension: 0.3,
-                            fill: false
-                        }
-                    ]
-                },
+            <h2>🌡️ Temperatura atual</h2>
 
-                options: {
-                    responsive: true,
+            <div class="valor" id="temperaturaAtual">
+                -- °C
+            </div>
 
-                    scales: {
-                        y: {
-                            beginAtZero: false
-                        }
-                    }
+        </div>
+
+
+        <div class="card-info">
+
+            <h2>💧 Umidade atual</h2>
+
+            <div class="valor" id="umidadeAtual">
+                -- %
+            </div>
+
+        </div>
+
+
+        <div class="card-info">
+
+            <h2>🌧️ Chuva</h2>
+
+            <div class="valor" id="chuvaAtual">
+                --
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ========================================
+         GRÁFICOS
+    ======================================== -->
+
+    <section class="graficos">
+
+
+        <!-- TEMPERATURA -->
+
+        <div class="card">
+
+            <h2>🌡️ Temperatura</h2>
+
+            <div class="grafico-container">
+
+                <canvas id="graficoTemperatura"></canvas>
+
+            </div>
+
+        </div>
+
+
+        <!-- UMIDADE -->
+
+        <div class="card">
+
+            <h2>💧 Umidade</h2>
+
+            <div class="grafico-container">
+
+                <canvas id="graficoUmidade"></canvas>
+
+            </div>
+
+        </div>
+
+
+        <!-- CHUVA -->
+
+        <div class="card chuva">
+
+            <h2>🌧️ Sensor de chuva</h2>
+
+            <div class="grafico-container">
+
+                <canvas id="graficoChuva"></canvas>
+
+            </div>
+
+        </div>
+
+
+    </section>
+
+
+    <script>
+
+        let graficoTemperatura;
+        let graficoUmidade;
+        let graficoChuva;
+
+
+        // ========================================
+        // CARREGAR DADOS
+        // ========================================
+
+        async function carregarDados() {
+
+            try {
+
+                const resposta = await fetch("/sensores");
+
+                if (!resposta.ok) {
+
+                    throw new Error("Erro ao consultar API");
+
                 }
-            }
-        );
+
+                const dados = await resposta.json();
 
 
-        // GRÁFICO DE UMIDADE
+                // ----------------------------------------
+                // VERIFICAR SE EXISTEM DADOS
+                // ----------------------------------------
 
-        new Chart(
-            document.getElementById("graficoUmidade"),
-            {
-                type: "line",
+                if (dados.length === 0) {
 
-                data: {
-                    labels: datas,
+                    document.getElementById("status").textContent =
+                        "Nenhum dado registrado ainda.";
 
-                    datasets: [
-                        {
-                            label: "Umidade (%)",
-                            data: umidades,
-                            tension: 0.3,
-                            fill: false
-                        }
-                    ]
-                },
+                    return;
 
-                options: {
-                    responsive: true,
-
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            max: 100
-                        }
-                    }
                 }
+
+
+                // ----------------------------------------
+                // ORGANIZAR DADOS
+                // ----------------------------------------
+
+                const datas = dados.map(item => item.data_hora);
+
+                const temperaturas =
+                    dados.map(item => item.temperatura);
+
+                const umidades =
+                    dados.map(item => item.umidade);
+
+                const chuvas =
+                    dados.map(item => item.chuva ? 1 : 0);
+
+
+                // ----------------------------------------
+                // ÚLTIMO REGISTRO
+                // ----------------------------------------
+
+                const ultimo = dados[dados.length - 1];
+
+
+                document.getElementById("temperaturaAtual").textContent =
+                    ultimo.temperatura + " °C";
+
+
+                document.getElementById("umidadeAtual").textContent =
+                    ultimo.umidade + " %";
+
+
+                document.getElementById("chuvaAtual").textContent =
+                    ultimo.chuva
+                        ? "CHUVA"
+                        : "SEM CHUVA";
+
+
+                document.getElementById("status").textContent =
+                    "Última atualização: " + ultimo.data_hora;
+
+
+                // ========================================
+                // GRÁFICO TEMPERATURA
+                // ========================================
+
+                if (graficoTemperatura) {
+                    graficoTemperatura.destroy();
+                }
+
+
+                graficoTemperatura = new Chart(
+
+                    document.getElementById("graficoTemperatura"),
+
+                    {
+
+                        type: "line",
+
+                        data: {
+
+                            labels: datas,
+
+                            datasets: [
+
+                                {
+
+                                    label: "Temperatura (°C)",
+
+                                    data: temperaturas,
+
+                                    tension: 0.3,
+
+                                    fill: false
+
+                                }
+
+                            ]
+
+                        },
+
+                        options: {
+
+                            responsive: true,
+
+                            maintainAspectRatio: false,
+
+                            scales: {
+
+                                y: {
+
+                                    beginAtZero: false
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                );
+
+
+                // ========================================
+                // GRÁFICO UMIDADE
+                // ========================================
+
+                if (graficoUmidade) {
+                    graficoUmidade.destroy();
+                }
+
+
+                graficoUmidade = new Chart(
+
+                    document.getElementById("graficoUmidade"),
+
+                    {
+
+                        type: "line",
+
+                        data: {
+
+                            labels: datas,
+
+                            datasets: [
+
+                                {
+
+                                    label: "Umidade (%)",
+
+                                    data: umidades,
+
+                                    tension: 0.3,
+
+                                    fill: false
+
+                                }
+
+                            ]
+
+                        },
+
+                        options: {
+
+                            responsive: true,
+
+                            maintainAspectRatio: false,
+
+                            scales: {
+
+                                y: {
+
+                                    beginAtZero: true,
+
+                                    max: 100
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                );
+
+
+                // ========================================
+                // GRÁFICO CHUVA
+                // ========================================
+
+                if (graficoChuva) {
+                    graficoChuva.destroy();
+                }
+
+
+                graficoChuva = new Chart(
+
+                    document.getElementById("graficoChuva"),
+
+                    {
+
+                        type: "line",
+
+                        data: {
+
+                            labels: datas,
+
+                            datasets: [
+
+                                {
+
+                                    label: "Chuva",
+
+                                    data: chuvas,
+
+                                    stepped: true,
+
+                                    tension: 0,
+
+                                    fill: false
+
+                                }
+
+                            ]
+
+                        },
+
+                        options: {
+
+                            responsive: true,
+
+                            maintainAspectRatio: false,
+
+                            scales: {
+
+                                y: {
+
+                                    min: 0,
+
+                                    max: 1,
+
+                                    ticks: {
+
+                                        stepSize: 1,
+
+                                        callback: function(value) {
+
+                                            if (value === 1) {
+                                                return "Chuva";
+                                            }
+
+                                            return "Sem chuva";
+
+                                        }
+
+                                    }
+
+                                }
+
+                            }
+
+                        }
+
+                    }
+
+                );
+
+
+            } catch (erro) {
+
+                console.error(erro);
+
+                document.getElementById("status").textContent =
+                    "Erro ao carregar os dados da API.";
+
             }
-        );
 
-    }
+        }
 
-    carregarDados();
 
-</script>
+        // ========================================
+        // PRIMEIRO CARREGAMENTO
+        // ========================================
+
+        carregarDados();
+
+
+        // ========================================
+        // ATUALIZAR A CADA 5 SEGUNDOS
+        // ========================================
+
+        setInterval(carregarDados, 5000);
+
+    </script>
+
 
 </body>
 

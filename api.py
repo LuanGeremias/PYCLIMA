@@ -1,17 +1,22 @@
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 
+
 app = FastAPI(title="PyClima API")
 
+
 # ========================================
-# CAMINHO DO BANCO
+# CAMINHO DO PROJETO
 # ========================================
 
 PASTA_PROJETO = Path(__file__).resolve().parent
 BANCO = PASTA_PROJETO / "pyclima.db"
+TEMPLATE = PASTA_PROJETO / "templates" / "dashboard.html"
+
 
 print("========================================")
 print("       PYCLIMA - BANCO DE DADOS")
@@ -19,6 +24,7 @@ print("========================================")
 print("Banco utilizado:")
 print(BANCO)
 print()
+
 
 # ========================================
 # BANCO DE DADOS
@@ -29,6 +35,7 @@ def conectar_banco():
 
 
 def criar_banco():
+
     conexao = conectar_banco()
     cursor = conexao.cursor()
 
@@ -48,11 +55,13 @@ def criar_banco():
 
 criar_banco()
 
+
 # ========================================
 # MODELO DOS DADOS
 # ========================================
 
 class DadosSensores(BaseModel):
+
     temperatura: float
     umidade: float
     chuva: bool
@@ -64,9 +73,20 @@ class DadosSensores(BaseModel):
 
 @app.get("/")
 def inicio():
+
     return {
         "mensagem": "API do PyClima funcionando!"
     }
+
+
+# ========================================
+# DASHBOARD
+# ========================================
+
+@app.get("/dashboard")
+def dashboard():
+
+    return FileResponse(TEMPLATE)
 
 
 # ========================================
@@ -129,7 +149,7 @@ def consultar_dados():
     cursor.execute("""
         SELECT id, temperatura, umidade, chuva, data_hora
         FROM sensores
-        ORDER BY id DESC
+        ORDER BY id ASC
     """)
 
     registros = cursor.fetchall()
